@@ -1,0 +1,11 @@
+staff_code,full_name,department_name,annual_salary,bonus,tax_rate
+E001,Alice Johnson,Engineering,95000,5000,0.28
+E002,Bob Smith,Marketing,72000,3000,0.24
+E003,carol white,Engineering,88000,4500,0.26
+E004,David Brown,Human Resources,,2000,0.22
+E005,Eva Martinez,Finance,105000,6000,0.30
+E007,Grace Kim,MARKETING,68000,2500,0.22
+E008,Henry Davis,Finance,92000,4800,0.27
+E009,Iris Chen,Human Resources,78000,3500,0.24
+E011,Laura Adams,Engineering,91000,4700,0.27
+E012,Mike Turner,Finance,,3200,0.26

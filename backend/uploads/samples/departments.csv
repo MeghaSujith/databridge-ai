@@ -1,0 +1,6 @@
+dept_code,department_name,manager_name,budget,location
+D001,Engineering,Alice Johnson,500000,New York
+D002,Marketing,Bob Smith,250000,Chicago
+D003,HR,David Brown,150000,Austin
+D004,Finance,Eva Martinez,350000,San Francisco
+D005,Operations,Tom Hayes,200000,Boston

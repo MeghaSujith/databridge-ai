@@ -1,0 +1,58 @@
+# Environment & Secrets (NEVER COMMIT SENSITIVE API KEYS)
+.env
+.env.*
+*.env
+backend/.env
+!.env.example
+!*.env.example
+!backend/.env.example
+
+# Python Virtual Environments & Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.pytest_cache/
+
+# Databases & Runtime Output
+*.db
+*.sqlite3
+backend/databridge.db
+backend/outputs/*
+!backend/outputs/.gitkeep
+backend/uploads/*
+!backend/uploads/samples/
+!backend/uploads/samples/**
+
+# Node & Frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+.npm
+*.log
+
+# Editors & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
