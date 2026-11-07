@@ -25,6 +25,9 @@ export const deleteDataset = (id) => api.delete(`/datasets/${id}`).then(r => r.d
 export const getDataQuality = (id) => api.get(`/quality/${id}`).then(r => r.data);
 export const getSamples = () => api.get('/samples').then(r => r.data);
 export const loadSample = (sampleId) => api.post(`/datasets/load-sample/${sampleId}`).then(r => r.data);
+export const previewSample = (sampleId, rows = 10) => api.get(`/samples/${sampleId}/preview?rows=${rows}`).then(r => r.data);
+export const getScenarios = () => api.get('/scenarios').then(r => r.data);
+export const downloadSampleUrl = (sampleId) => `/api/datasets/${sampleId}/sample`;
 export const analyzeSchema = (body) => api.post('/schema/analyze', body).then(r => r.data);
 export const applySchemaMapping = (body) => api.post('/schema/map', body).then(r => r.data);
 export const getAIPlan = (body) => api.post('/ai/plan', body).then(r => r.data);

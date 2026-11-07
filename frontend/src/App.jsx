@@ -20,20 +20,27 @@ const PAGES = {
 
 export default function App() {
   const [page, setPage] = useState('overview');
+  const [navigationParams, setNavigationParams] = useState({});
   const [datasets, setDatasets] = useState([]);
 
   const handleDatasetsChange = useCallback((ds) => setDatasets(ds), []);
+
+  const handleNavigate = useCallback((targetPage, params = {}) => {
+    setPage(targetPage);
+    setNavigationParams(params || {});
+  }, []);
 
   const PageComponent = PAGES[page] || Overview;
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#f4f4f4' }}>
-      <Sidebar activePage={page} onNavigate={setPage} />
+      <Sidebar activePage={page} onNavigate={(p) => handleNavigate(p, {})} />
       <main className="flex-1 overflow-y-auto">
         <PageComponent
           datasets={datasets}
           onDatasetsChange={handleDatasetsChange}
-          onNavigate={setPage}
+          onNavigate={handleNavigate}
+          navigationParams={navigationParams}
         />
       </main>
     </div>

@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { GitMerge, ArrowRight, CheckCircle, XCircle, RefreshCw, Zap, Eye } from 'lucide-react';
+import {
+  GitMerge, ArrowRight, CheckCircle, XCircle, RefreshCw,
+  Zap, Eye, Plus, X, Database, Check, Layers, AlertCircle
+} from 'lucide-react';
 import { getDatasets, analyzeSchema, applySchemaMapping } from '../api';
 import { Card, Badge, Spinner, Button, Alert, PageHeader, Select, DataTable } from '../components/ui';
 
@@ -15,7 +18,7 @@ function ConfidenceBar({ score }) {
   );
 }
 
-export default function SchemaMapping() {
+export default function SchemaMapping({ onNavigate, navigationParams }) {
   const [datasets, setDatasets] = useState([]);
   const [datasetA, setDatasetA] = useState('');
   const [datasetB, setDatasetB] = useState('');
@@ -30,12 +33,34 @@ export default function SchemaMapping() {
   const [error, setError] = useState('');
   const [step, setStep] = useState(1);
 
+  // Load datasets and handle preselection
   useEffect(() => {
-    getDatasets().then(setDatasets).catch(console.error);
-  }, []);
+    getDatasets()
+      .then(data => {
+        setDatasets(data);
+        const targetId = navigationParams?.datasetId || sessionStorage.getItem('databridge_selected_dataset_id');
+        if (targetId && data.some(d => d.id === targetId)) {
+          setDatasetA(targetId);
+          sessionStorage.setItem('databridge_selected_dataset_id', targetId);
+        }
+      })
+      .catch(console.error);
+  }, [navigationParams?.datasetId]);
 
-  const dsOptions = datasets.map(d => ({ value: d.id, label: d.filename }));
-  const dsOptionsAll = [{ value: '', label: 'Select dataset...' }, ...dsOptions];
+  const dsA = datasets.find(d => d.id === datasetA);
+  const dsB = datasets.find(d => d.id === datasetB);
+
+  const getFormatStyle = (filename) => {
+    const ext = filename?.split('.').pop()?.toUpperCase() || 'CSV';
+    if (ext === 'XLSX') return { ext, bg: '#edf5ff', text: '#0043ce' };
+    if (ext === 'JSON') return { ext, bg: '#fef3cd', text: '#a16207' };
+    return { ext, bg: '#defbe6', text: '#198038' };
+  };
+
+  // Dataset 1 can be any dataset except datasetB
+  const availableForA = datasets.filter(d => !datasetB || d.id !== datasetB);
+  // Dataset 2 can be any dataset except datasetA
+  const availableForB = datasets.filter(d => !datasetA || d.id !== datasetA);
 
   const handleAnalyze = async () => {
     setError('');
@@ -124,57 +149,343 @@ export default function SchemaMapping() {
 
       {error && <div className="mb-4"><Alert type="error">{error}</Alert></div>}
 
-      {/* Step 1: Select Datasets */}
-      <Card style={{ padding: 24, marginBottom: 16 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 16, color: '#161616' }}>
-          Step 1: Select Datasets to Map
-        </div>
-        <div className="grid grid-cols-2 gap-6">
+      {/* ===================================================================== */}
+      {/* STEP 1: DATASET SELECTION GRID */}
+      {/* ===================================================================== */}
+      <Card style={{ padding: 24, marginBottom: 20 }}>
+        <div className="flex items-center justify-between mb-4">
           <div>
-            <Select
-              label="Dataset A (Source)"
-              value={datasetA}
-              onChange={setDatasetA}
-              options={dsOptionsAll}
-            />
-            {datasetA && (
-              <div style={{ marginTop: 8 }}>
-                {datasets.find(d => d.id === datasetA)?.column_info?.map(c => (
-                  <span key={c.name} style={{
-                    display: 'inline-block', background: '#edf5ff', borderRadius: 4,
-                    padding: '2px 7px', fontSize: 11, color: '#0043ce', margin: '2px 3px 2px 0'
-                  }}>{c.name}</span>
-                ))}
-              </div>
-            )}
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#161616' }}>
+              Step 1: Select Enterprise Datasets to Map
+            </div>
+            <div style={{ fontSize: 12, color: '#6f6f6f', marginTop: 2 }}>
+              Choose a primary source dataset and add a target dataset to compare schemas and map semantic fields
+            </div>
           </div>
+          {datasetA && datasetB && (
+            <Badge color="green">2 Datasets Ready</Badge>
+          )}
+        </div>
+
+        {datasets.length === 0 ? (
+          <div style={{
+            background: '#fafafa', border: '1.5px dashed #d0d0d0', borderRadius: 8,
+            padding: '36px 20px', textAlign: 'center'
+          }}>
+            <Database size={32} color="#8d8d8d" style={{ margin: '0 auto 8px' }} />
+            <div style={{ fontWeight: 600, fontSize: 14, color: '#161616' }}>No Active Datasets in Workspace</div>
+            <div style={{ color: '#6f6f6f', fontSize: 12, marginTop: 4, marginBottom: 14 }}>
+              Load sample datasets or upload enterprise files from Data Sources to start schema mapping.
+            </div>
+            <Button variant="primary" size="sm" onClick={() => onNavigate && onNavigate('sources')}>
+              Go to Data Sources <ArrowRight size={12} />
+            </Button>
+          </div>
+        ) : (
           <div>
-            <Select
-              label="Dataset B (Target)"
-              value={datasetB}
-              onChange={setDatasetB}
-              options={dsOptionsAll}
-            />
-            {datasetB && (
-              <div style={{ marginTop: 8 }}>
-                {datasets.find(d => d.id === datasetB)?.column_info?.map(c => (
-                  <span key={c.name} style={{
-                    display: 'inline-block', background: '#defbe6', borderRadius: 4,
-                    padding: '2px 7px', fontSize: 11, color: '#198038', margin: '2px 3px 2px 0'
-                  }}>{c.name}</span>
-                ))}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-stretch relative">
+              {/* Dataset 1 (Primary) */}
+              {dsA ? (
+                <div style={{
+                  background: '#fff', border: '1.5px solid #0f62fe', borderRadius: 8,
+                  padding: '16px 18px', display: 'flex', flexDirection: 'column',
+                  justifyContent: 'space-between', boxShadow: '0 2px 6px rgba(15,98,254,0.08)'
+                }}>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span style={{
+                          background: '#edf5ff', color: '#0043ce', border: '1px solid #b0d2ff',
+                          fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, letterSpacing: '0.4px'
+                        }}>
+                          DATASET 1 • PRIMARY
+                        </span>
+                        <span style={{
+                          background: getFormatStyle(dsA.filename).bg,
+                          color: getFormatStyle(dsA.filename).text,
+                          fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4
+                        }}>
+                          {getFormatStyle(dsA.filename).ext}
+                        </span>
+                      </div>
+                      <select
+                        value={datasetA}
+                        onChange={(e) => {
+                          const newA = e.target.value;
+                          setDatasetA(newA);
+                          sessionStorage.setItem('databridge_selected_dataset_id', newA);
+                          setAnalysis(null);
+                          setPreviewData(null);
+                        }}
+                        style={{
+                          fontSize: 11.5, color: '#525252', background: '#f4f4f4',
+                          border: '1px solid #d0d0d0', borderRadius: 4, padding: '2px 6px', cursor: 'pointer'
+                        }}
+                        title="Change Dataset 1"
+                      >
+                        <option value={dsA.id}>Change: {dsA.filename}</option>
+                        {availableForA.filter(d => d.id !== dsA.id).map(d => (
+                          <option key={d.id} value={d.id}>{d.filename}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#161616', marginBottom: 2 }}>
+                      {dsA.filename}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: '#6f6f6f', marginBottom: 12 }}>
+                      {dsA.rows.toLocaleString()} rows · {dsA.columns} columns · {dsA.file_size_kb?.toFixed(1)} KB
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 600, color: '#525252', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        Columns ({dsA.column_info?.length || 0})
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto">
+                        {dsA.column_info?.map(c => (
+                          <span key={c.name} style={{
+                            background: '#edf5ff', color: '#0043ce', border: '1px solid #d0e2ff',
+                            padding: '2px 6px', borderRadius: 4, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4
+                          }}>
+                            <strong>{c.name}</strong>
+                            <span style={{ color: '#6f6f6f', fontSize: 10 }}>{c.dtype}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div style={{
+                  background: '#fafafa', border: '1.5px dashed #b0d2ff', borderRadius: 8,
+                  padding: '24px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', minHeight: 220
+                }}>
+                  <div style={{ fontWeight: 600, fontSize: 14, color: '#161616', marginBottom: 4 }}>
+                    Select Dataset 1 (Primary)
+                  </div>
+                  <div style={{ color: '#6f6f6f', fontSize: 12, marginBottom: 14 }}>
+                    Choose the primary source dataset to map
+                  </div>
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setDatasetA(e.target.value);
+                        sessionStorage.setItem('databridge_selected_dataset_id', e.target.value);
+                        setAnalysis(null);
+                        setPreviewData(null);
+                      }
+                    }}
+                    style={{
+                      width: '100%', maxWidth: 300, padding: '7px 10px', borderRadius: 6,
+                      border: '1.5px solid #0f62fe', background: '#fff', fontSize: 12.5,
+                      fontWeight: 600, color: '#0f62fe', cursor: 'pointer', outline: 'none'
+                    }}
+                  >
+                    <option value="">Select Primary Dataset...</option>
+                    {availableForA.map(d => (
+                      <option key={d.id} value={d.id} style={{ color: '#161616', fontWeight: 400 }}>
+                        {d.filename} ({d.rows} rows, {d.columns} cols)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Dataset 2 (Target) */}
+              {dsB ? (
+                <div style={{
+                  background: '#fff', border: '1.5px solid #198038', borderRadius: 8,
+                  padding: '16px 18px', display: 'flex', flexDirection: 'column',
+                  justifyContent: 'space-between', boxShadow: '0 2px 6px rgba(25,128,56,0.08)'
+                }}>
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span style={{
+                          background: '#defbe6', color: '#198038', border: '1px solid #a7f3d0',
+                          fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 4, letterSpacing: '0.4px'
+                        }}>
+                          DATASET 2 • TARGET
+                        </span>
+                        <span style={{
+                          background: getFormatStyle(dsB.filename).bg,
+                          color: getFormatStyle(dsB.filename).text,
+                          fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4
+                        }}>
+                          {getFormatStyle(dsB.filename).ext}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <select
+                          value={datasetB}
+                          onChange={(e) => {
+                            setDatasetB(e.target.value);
+                            setAnalysis(null);
+                            setPreviewData(null);
+                          }}
+                          style={{
+                            fontSize: 11.5, color: '#525252', background: '#f4f4f4',
+                            border: '1px solid #d0d0d0', borderRadius: 4, padding: '2px 6px', cursor: 'pointer'
+                          }}
+                          title="Change Dataset 2"
+                        >
+                          <option value={dsB.id}>Change: {dsB.filename}</option>
+                          {availableForB.filter(d => d.id !== dsB.id).map(d => (
+                            <option key={d.id} value={d.id}>{d.filename}</option>
+                          ))}
+                        </select>
+                        <button
+                          onClick={() => {
+                            setDatasetB('');
+                            setAnalysis(null);
+                            setPreviewData(null);
+                          }}
+                          style={{
+                            background: '#fff', border: '1px solid #ffd7d9', color: '#da1e28',
+                            borderRadius: 4, padding: '2px 6px', fontSize: 11, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 2
+                          }}
+                          title="Remove Dataset 2"
+                        >
+                          <X size={12} /> Remove
+                        </button>
+                      </div>
+                    </div>
+
+                    <div style={{ fontWeight: 700, fontSize: 15, color: '#161616', marginBottom: 2 }}>
+                      {dsB.filename}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: '#6f6f6f', marginBottom: 12 }}>
+                      {dsB.rows.toLocaleString()} rows · {dsB.columns} columns · {dsB.file_size_kb?.toFixed(1)} KB
+                    </div>
+
+                    <div style={{ borderTop: '1px solid #f0f0f0', paddingTop: 8 }}>
+                      <div style={{ fontSize: 10.5, fontWeight: 600, color: '#525252', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                        Columns ({dsB.column_info?.length || 0})
+                      </div>
+                      <div className="flex flex-wrap gap-1 max-h-36 overflow-y-auto">
+                        {dsB.column_info?.map(c => (
+                          <span key={c.name} style={{
+                            background: '#defbe6', color: '#198038', border: '1px solid #bbf7d0',
+                            padding: '2px 6px', borderRadius: 4, fontSize: 11, display: 'inline-flex', alignItems: 'center', gap: 4
+                          }}>
+                            <strong>{c.name}</strong>
+                            <span style={{ color: '#6f6f6f', fontSize: 10 }}>{c.dtype}</span>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : availableForB.length === 0 ? (
+                <div style={{
+                  background: '#fafafa', border: '1.5px dashed #d0d0d0', borderRadius: 8,
+                  padding: '24px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', minHeight: 220
+                }}>
+                  <div style={{
+                    width: 38, height: 38, borderRadius: '50%', background: '#f4f4f4',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8d8d8d', marginBottom: 8
+                  }}>
+                    <Database size={18} />
+                  </div>
+                  <div style={{ fontWeight: 600, fontSize: 13.5, color: '#161616', marginBottom: 3 }}>
+                    Only 1 Active Dataset in Workspace
+                  </div>
+                  <div style={{ color: '#6f6f6f', fontSize: 12, marginBottom: 12, maxWidth: 280 }}>
+                    Schema mapping requires two datasets. Please load or upload a second dataset from Data Sources.
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => onNavigate && onNavigate('sources')}
+                    style={{ fontSize: 12, padding: '5px 12px' }}
+                  >
+                    Load Second Dataset <ArrowRight size={12} />
+                  </Button>
+                </div>
+              ) : (
+                <div style={{
+                  background: '#f8fbff', border: '2px dashed #b0d2ff', borderRadius: 8,
+                  padding: '24px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column',
+                  alignItems: 'center', justifyContent: 'center', minHeight: 220
+                }}>
+                  <div style={{
+                    width: 42, height: 42, borderRadius: '50%', background: '#0f62fe',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
+                    marginBottom: 10, boxShadow: '0 2px 6px rgba(15,98,254,0.3)'
+                  }}>
+                    <Plus size={20} strokeWidth={2.5} />
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 14.5, color: '#161616', marginBottom: 2 }}>
+                    Add Dataset 2 (Target)
+                  </div>
+                  <div style={{ color: '#525252', fontSize: 12, marginBottom: 12, maxWidth: 280 }}>
+                    Select a second active dataset to compare schemas and generate automated mappings
+                  </div>
+
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        setDatasetB(e.target.value);
+                        setAnalysis(null);
+                        setPreviewData(null);
+                      }
+                    }}
+                    style={{
+                      width: '100%', maxWidth: 300, padding: '8px 12px', borderRadius: 6,
+                      border: '1.5px solid #0f62fe', background: '#fff', fontSize: 12.5,
+                      fontWeight: 600, color: '#0f62fe', cursor: 'pointer', outline: 'none'
+                    }}
+                  >
+                    <option value="">+ Select Dataset 2 ({availableForB.length} available)...</option>
+                    {availableForB.map(d => (
+                      <option key={d.id} value={d.id} style={{ color: '#161616', fontWeight: 400 }}>
+                        {d.filename} ({d.rows} rows, {d.columns} cols)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* AI Analysis Trigger Row */}
+            <div style={{
+              marginTop: 20, paddingTop: 16, borderTop: '1px solid #f0f0f0',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12
+            }}>
+              <div style={{ fontSize: 12, color: '#525252' }}>
+                {datasetA && datasetB ? (
+                  <span>
+                    Ready to compare <strong>{dsA?.filename}</strong> and <strong>{dsB?.filename}</strong>.
+                  </span>
+                ) : (
+                  <span>
+                    Select both Dataset 1 and Dataset 2 to begin AI-powered schema analysis.
+                  </span>
+                )}
               </div>
-            )}
+
+              <Button
+                variant="primary"
+                onClick={handleAnalyze}
+                loading={loading}
+                disabled={!datasetA || !datasetB}
+                style={{ padding: '8px 18px', fontSize: 13, gap: 6 }}
+              >
+                <Zap size={15} /> {loading ? 'Analyzing with AI...' : 'Analyze Schema with AI'}
+              </Button>
+            </div>
           </div>
-        </div>
-        <div style={{ marginTop: 16 }}>
-          <Button onClick={handleAnalyze} loading={loading} disabled={!datasetA || !datasetB}>
-            <Zap size={15} /> {loading ? 'Analyzing...' : 'Analyze Schema with AI'}
-          </Button>
-        </div>
+        )}
       </Card>
 
-      {/* Step 2: Review Mappings */}
+      {/* ===================================================================== */}
+      {/* STEP 2: REVIEW MAPPINGS */}
+      {/* ===================================================================== */}
       {analysis && (
         <Card style={{ padding: 24, marginBottom: 16 }}>
           <div className="flex items-center justify-between mb-4">
@@ -281,7 +592,9 @@ export default function SchemaMapping() {
         </Card>
       )}
 
-      {/* Step 3: Preview */}
+      {/* ===================================================================== */}
+      {/* STEP 3: PREVIEW */}
+      {/* ===================================================================== */}
       {previewData && (
         <Card style={{ padding: 24 }}>
           <div style={{ fontWeight: 600, fontSize: 14, color: '#161616', marginBottom: 4 }}>
@@ -291,14 +604,16 @@ export default function SchemaMapping() {
             {previewData.total_rows} rows · {previewData.columns.length} columns · {joinType.toUpperCase()} JOIN
           </div>
           <DataTable data={previewData.preview} columns={previewData.columns} maxHeight={350} />
-          <div style={{ marginTop: 12 }}>
-            <Alert type="success">
-              Mapping preview complete. Go to Transformation Studio to apply operations and execute the integration.
+          <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+            <Alert type="success" style={{ flex: 1 }}>
+              Mapping preview complete. Proceed to Transformation Studio to apply data cleaning and operations.
             </Alert>
+            <Button variant="primary" onClick={() => onNavigate && onNavigate('transform')} style={{ gap: 6 }}>
+              Proceed to Transformation Studio <ArrowRight size={13} />
+            </Button>
           </div>
         </Card>
       )}
     </div>
   );
 }
-

@@ -1,0 +1,72 @@
+[
+  {
+    "product_id": "P201",
+    "product_name": "Enterprise Server Blade X1",
+    "category": "Hardware",
+    "price": 499.9,
+    "stock_quantity": 85
+  },
+  {
+    "product_id": "P202",
+    "product_name": "Cloud Data Gateway Pro",
+    "category": "Networking",
+    "price": 290.0,
+    "stock_quantity": 140
+  },
+  {
+    "product_id": "P203",
+    "product_name": "AI Inference Accelerator",
+    "category": "Hardware",
+    "price": 499.0,
+    "stock_quantity": 60
+  },
+  {
+    "product_id": "P204",
+    "product_name": "Edge IoT Sensor Module",
+    "category": "IoT Devices",
+    "price": 149.0,
+    "stock_quantity": 320
+  },
+  {
+    "product_id": "P205",
+    "product_name": "Managed Firewall Appliance",
+    "category": "Security",
+    "price": 450.0,
+    "stock_quantity": 95
+  },
+  {
+    "product_id": "P206",
+    "product_name": "Optical Fiber Transceiver",
+    "category": "Networking",
+    "price": 350.0,
+    "stock_quantity": 210
+  },
+  {
+    "product_id": "P207",
+    "product_name": "Redundant Power Supply 1200W",
+    "category": "Accessories",
+    "price": 490.0,
+    "stock_quantity": 115
+  },
+  {
+    "product_id": "P208",
+    "product_name": "Smart Rack Cooling Fan Array",
+    "category": "Hardware",
+    "price": 190.0,
+    "stock_quantity": 180
+  },
+  {
+    "product_id": "P209",
+    "product_name": "High-Density NVMe Storage Array",
+    "category": "Storage",
+    "price": 890.0,
+    "stock_quantity": 40
+  },
+  {
+    "product_id": "P210",
+    "product_name": "Industrial Ethernet Switch 24P",
+    "category": "Networking",
+    "price": 620.0,
+    "stock_quantity": 75
+  }
+]

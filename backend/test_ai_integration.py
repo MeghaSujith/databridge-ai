@@ -29,18 +29,33 @@ def test_ai_module():
     assert s2 >= 0.7, "Failed substring matching for Department"
     assert s3 >= 0.6, "Failed synonym matching for Salary"
     assert s4 == 0.0, "Unexpected match for unrelated columns"
-    print("✓ Similarity scoring verified")
+
+    # Specific tests for semantic discrimination & identifier compatibility
+    assert _similarity_score("customer_id", "client_reference") == 0.98, "Expected 0.98 for matching entity identifiers"
+    assert _similarity_score("employee_id", "staff_id") == 0.98, "Expected 0.98 for employee/staff ID identifiers"
+    assert _similarity_score("customer_id", "order_id") == 0.60, "Expected 0.60 for generic ID match across different entities"
+    assert _similarity_score("customer_id", "client_reference") > _similarity_score("customer_id", "order_id"), "Entity ID must outrank generic ID"
+    
+    # Confirm distinct date concepts are NOT treated as equivalent fields
+    assert _similarity_score("joining_date", "attendance_date") == 0.0, "Joining date and attendance date must not match"
+    assert _similarity_score("registration_date", "order_date") == 0.0, "Registration date and order date must not match"
+    assert _similarity_score("payment_status", "attendance_status") == 0.0, "Payment status and attendance status must not match"
+
+    # Confirm semantic salary field mapping is allowed
+    assert _similarity_score("salary", "basic_salary") == 0.95, "Salary and basic_salary must be recognized as semantic match"
+    print("✓ Similarity scoring and semantic discrimination verified")
 
     # 2. Test deterministic schema mapping
-    cols_a = ["employee_id", "employee_name", "department", "hire_date", "email"]
-    cols_b = ["staff_code", "full_name", "department_name", "annual_salary", "bonus"]
+    cols_a = ["employee_id", "employee_name", "department", "hire_date", "salary"]
+    cols_b = ["staff_code", "full_name", "department_name", "start_date", "basic_salary"]
     mappings = _deterministic_schema_mapping(cols_a, cols_b)
     print(f"Deterministic mappings generated: {len(mappings)}")
     for m in mappings:
-        print(f"  {m['source_column']} -> {m['target_column']} (confidence={m['confidence']}, reason={m['reason']})")
-    assert any(m["source_column"] == "employee_id" and m["target_column"] == "staff_code" for m in mappings)
-    assert any(m["source_column"] == "department" and m["target_column"] == "department_name" for m in mappings)
-    print("✓ Deterministic schema mapping verified")
+        print(f"  {m['source_column']} -> {m['target_column']} (confidence={m['confidence']}, is_identifier={m.get('is_identifier')})")
+    assert any(m["source_column"] == "employee_id" and m["target_column"] == "staff_code" and m.get("is_identifier") is True for m in mappings)
+    assert any(m["source_column"] == "salary" and m["target_column"] == "basic_salary" and m.get("is_identifier") is False for m in mappings)
+    assert any(m["source_column"] == "hire_date" and m["target_column"] == "start_date" for m in mappings)
+    print("✓ Deterministic schema mapping with identifier protection verified")
 
     # 3. Test AI Status in Fallback mode
     st = ai_status()

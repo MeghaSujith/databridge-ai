@@ -1,0 +1,10 @@
+supplier_id,supplier_name,contact_email,location,supplier_category
+SUP-01,Apex Silicon Foundry,sales@apexsilicon.com,Austin,Hardware
+SUP-02,NexaTech Components,b2b@nexatech.de,Munich,Networking
+SUP-03,Pacific Optical Supplies,info@pacificoptics.jp,Tokyo,Optics
+SUP-04,Nordic Thermal Dynamics,support@nordicthermal.se,Stockholm,Cooling
+SUP-05,Quantum Sensors Inc,orders@quantumsensors.com,Boston,IoT Devices
+SUP-06,Veloce Cable Systems,sales@velocecables.it,Milan,Accessories
+SUP-07,Vanguard Storage Corp,,San Jose,Storage
+SUP-01,Apex Silicon Foundry,sales@apexsilicon.com,Austin,Hardware
+SUP-08,Titanium Power Modules,orders@titaniumpower.com,Chicago,hardware

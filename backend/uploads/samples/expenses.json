@@ -1,0 +1,98 @@
+[
+  {
+    "expense_id": "EXP-301",
+    "department": "Engineering",
+    "expense_category": "Cloud Infrastructure",
+    "amount": 14500.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-01"
+  },
+  {
+    "expense_id": "EXP-302",
+    "department": "Marketing",
+    "expense_category": "Advertising Campaigns",
+    "amount": 8200.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-03"
+  },
+  {
+    "expense_id": "EXP-303",
+    "department": "HR",
+    "expense_category": "Recruitment Software",
+    "amount": 3400.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-05"
+  },
+  {
+    "expense_id": "EXP-304",
+    "department": "Finance",
+    "expense_category": "Audit & Compliance",
+    "amount": 6500.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-08"
+  },
+  {
+    "expense_id": "EXP-305",
+    "department": "Operations",
+    "expense_category": "Facility Maintenance",
+    "amount": 4100.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-10"
+  },
+  {
+    "expense_id": "EXP-306",
+    "department": "Engineering",
+    "expense_category": "Hardware Workstations",
+    "amount": 9800.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-12"
+  },
+  {
+    "expense_id": "EXP-307",
+    "department": "Marketing",
+    "expense_category": "Conference Sponsorship",
+    "amount": 5500.0,
+    "approval_status": "Pending",
+    "submission_date": "2024-08-15"
+  },
+  {
+    "expense_id": "EXP-308",
+    "department": "Sales",
+    "expense_category": "Client Entertainment",
+    "amount": 2100.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-18"
+  },
+  {
+    "expense_id": "EXP-309",
+    "department": "HR",
+    "expense_category": "Employee Training",
+    "amount": 4800.0,
+    "approval_status": "Rejected",
+    "submission_date": "2024-08-20"
+  },
+  {
+    "expense_id": "EXP-310",
+    "department": "Engineering",
+    "expense_category": "SaaS Subscriptions",
+    "amount": 7200.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-22"
+  },
+  {
+    "expense_id": "EXP-311",
+    "department": "Operations",
+    "expense_category": "Shipping & Logistics",
+    "amount": 3900.0,
+    "approval_status": null,
+    "submission_date": "2024-08-25"
+  },
+  {
+    "expense_id": "EXP-312",
+    "department": "Finance",
+    "expense_category": "Tax Advisory Services",
+    "amount": 5200.0,
+    "approval_status": "Approved",
+    "submission_date": "2024-08-28"
+  }
+]

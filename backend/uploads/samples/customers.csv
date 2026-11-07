@@ -1,0 +1,13 @@
+customer_id,customer_name,email,location,registration_date
+C101,Acme Global Logistics,contact@acmeglobal.com,New York,2022-01-15
+C102,BlueWave Technologies,info@bluewave.io,San Francisco,2022-03-20
+C103,Crestline Partners,billing@crestline.com,Chicago,2022-06-11
+C104,Delta Healthcare Systems,ap@deltahealth.org,Austin,2022-09-04
+C105,Echo Media Networks,accounting@echomedia.net,Boston,2023-02-18
+C106,Frontier Aerospace,finance@frontieraero.com,Seattle,2023-04-22
+C107,Greenleaf Agribusiness,orders@greenleaf.com,Denver,2023-07-30
+C108,Horizon Financial,support@horizonfin.com,new york,2023-10-14
+C109,Ironclad Security,payments@ironcladsec.com,Atlanta,2024-01-08
+C110,Jupiter Retail Group,admin@jupiterretail.com,Dallas,2024-03-25
+C101,Acme Global Logistics,contact@acmeglobal.com,New York,2022-01-15
+C113,Keystone Industrial,,Los Angeles,2024-05-19

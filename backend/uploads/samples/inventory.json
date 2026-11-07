@@ -1,0 +1,72 @@
+[
+  {
+    "product_reference": "P201",
+    "warehouse_id": "WH-EAST-01",
+    "available_stock": 85,
+    "reorder_level": 20,
+    "last_updated": "2024-08-01"
+  },
+  {
+    "product_reference": "P202",
+    "warehouse_id": "WH-EAST-01",
+    "available_stock": 140,
+    "reorder_level": 30,
+    "last_updated": "2024-08-01"
+  },
+  {
+    "product_reference": "P203",
+    "warehouse_id": "WH-WEST-02",
+    "available_stock": 60,
+    "reorder_level": 15,
+    "last_updated": "2024-08-02"
+  },
+  {
+    "product_reference": "P204",
+    "warehouse_id": "WH-CENTRAL-03",
+    "available_stock": 320,
+    "reorder_level": 50,
+    "last_updated": "2024-08-02"
+  },
+  {
+    "product_reference": "P205",
+    "warehouse_id": "WH-WEST-02",
+    "available_stock": 95,
+    "reorder_level": 25,
+    "last_updated": "2024-08-03"
+  },
+  {
+    "product_reference": "P206",
+    "warehouse_id": "WH-EAST-01",
+    "available_stock": 210,
+    "reorder_level": 40,
+    "last_updated": "2024-08-03"
+  },
+  {
+    "product_reference": "P207",
+    "warehouse_id": "WH-CENTRAL-03",
+    "available_stock": 115,
+    "reorder_level": 30,
+    "last_updated": "2024-08-04"
+  },
+  {
+    "product_reference": "P208",
+    "warehouse_id": "WH-WEST-02",
+    "available_stock": 180,
+    "reorder_level": 40,
+    "last_updated": "2024-08-04"
+  },
+  {
+    "product_reference": "P209",
+    "warehouse_id": "WH-EAST-01",
+    "available_stock": 40,
+    "reorder_level": 10,
+    "last_updated": "2024-08-05"
+  },
+  {
+    "product_reference": "P999",
+    "warehouse_id": "WH-CENTRAL-03",
+    "available_stock": 15,
+    "reorder_level": 5,
+    "last_updated": "2024-08-05"
+  }
+]

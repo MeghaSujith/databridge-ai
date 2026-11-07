@@ -46,7 +46,7 @@ def run_all_tests():
 
     # Wait for server to become healthy
     ready = False
-    for _ in range(30):
+    for _ in range(60):
         try:
             r = httpx.get(f"{BASE_URL}/api/health", timeout=1.0)
             if r.status_code == 200:
@@ -76,10 +76,10 @@ def run_all_tests():
             _create_sample_data()
             samples_dir = os.path.join(".", "uploads", "samples")
             emp_sample = os.path.join(samples_dir, "employees.csv")
-            pay_sample = os.path.join(samples_dir, "payroll.csv")
+            pay_sample = os.path.join(samples_dir, "payroll.json")
             dept_sample = os.path.join(samples_dir, "departments.csv")
             assert os.path.exists(emp_sample), "employees.csv missing"
-            assert os.path.exists(pay_sample), "payroll.csv missing"
+            assert os.path.exists(pay_sample), "payroll.json missing"
             assert os.path.exists(dept_sample), "departments.csv missing"
             df_emp = pd.read_csv(emp_sample)
             assert len(df_emp) > 0
@@ -111,26 +111,27 @@ def run_all_tests():
             assert res.status_code == 200, res.text
             emp_ds = res.json()
             emp_id = emp_ds["id"]
-            assert emp_ds["rows"] > 0
-            assert emp_ds["columns"] > 0
+            assert emp_ds["rows"] == 13, f"Expected 13 rows, got {emp_ds['rows']}"
+            assert emp_ds["columns"] == 7, f"Expected 7 columns, got {emp_ds['columns']}"
             assert emp_ds["duplicate_rows"] == 1, f"Expected 1 duplicate, got {emp_ds['duplicate_rows']}"
             record_test("3. Upload Employees Dataset", True, (time.time() - t0) * 1000, f"rows={emp_ds['rows']}, cols={emp_ds['columns']}, dupes={emp_ds['duplicate_rows']}")
         except Exception as e:
             record_test("3. Upload Employees Dataset", False, (time.time() - t0) * 1000, str(e))
 
         # ---------------------------------------------------------
-        # TEST 4: Upload Payroll CSV Dataset
+        # TEST 4: Upload Payroll JSON Dataset
         # ---------------------------------------------------------
         t0 = time.time()
         try:
             samples_dir = os.path.join(".", "uploads", "samples")
-            with open(os.path.join(samples_dir, "payroll.csv"), "rb") as f:
-                res = client.post("/api/datasets/upload", files={"file": ("payroll.csv", f, "text/csv")})
+            with open(os.path.join(samples_dir, "payroll.json"), "rb") as f:
+                res = client.post("/api/datasets/upload", files={"file": ("payroll.json", f, "application/json")})
             assert res.status_code == 200, res.text
             pay_ds = res.json()
             pay_id = pay_ds["id"]
-            assert pay_ds["rows"] > 0
-            assert pay_ds["missing_values"] > 0
+            assert pay_ds["rows"] == 11, f"Expected 11 rows, got {pay_ds['rows']}"
+            assert pay_ds["columns"] == 6, f"Expected 6 columns, got {pay_ds['columns']}"
+            assert pay_ds["missing_values"] >= 1, f"Expected missing values in payroll, got {pay_ds['missing_values']}"
             record_test("4. Upload Payroll Dataset", True, (time.time() - t0) * 1000, f"rows={pay_ds['rows']}, missing={pay_ds['missing_values']}")
         except Exception as e:
             record_test("4. Upload Payroll Dataset", False, (time.time() - t0) * 1000, str(e))
@@ -174,12 +175,13 @@ def run_all_tests():
             assert res.status_code == 200
             q = res.json()
             assert 0 <= q["quality_score"] <= 100
-            assert q["total_records"] == 11
-            assert q["duplicate_count"] == 1
+            assert q["total_records"] == 13, f"Expected 13 records in employees.csv, got {q['total_records']}"
+            assert q["duplicate_count"] == 1, f"Expected 1 duplicate record, got {q['duplicate_count']}"
             assert "column_quality" in q
-            assert len(q["column_quality"]) == 6
+            assert len(q["column_quality"]) == 7, f"Expected 7 columns in employees.csv, got {len(q['column_quality'])}"
             email_col = next((c for c in q["column_quality"] if c["column"] == "email"), None)
             assert email_col is not None
+            assert email_col["missing"] == 1, f"Expected 1 missing email, got {email_col['missing']}"
             record_test("7. Data Quality Engine", True, (time.time() - t0) * 1000, f"score={q['quality_score']}%, completeness={q['summary']['completeness']}%")
         except Exception as e:
             record_test("7. Data Quality Engine", False, (time.time() - t0) * 1000, str(e))
@@ -194,13 +196,13 @@ def run_all_tests():
             mapping_data = res.json()
             mappings = mapping_data["mappings"]
             assert len(mappings) > 0, "No column mappings suggested"
-            # Verify employee_id <-> staff_code match
+            # Verify employee_id <-> employee_code identifier match
             matched = any(
-                (m["source_column"] == "employee_id" and m["target_column"] == "staff_code") or
-                (m["source_column"] == "department" and m["target_column"] == "department_name")
+                (m["source_column"] == "employee_id" and m["target_column"] == "employee_code") or
+                (m["source_column"] == "salary" and m["target_column"] == "basic_salary")
                 for m in mappings
             )
-            assert matched, f"Expected semantic matches, got: {mappings}"
+            assert matched, f"Expected semantic matches between employees and payroll, got: {mappings}"
             record_test("8. Schema Mapping Analysis", True, (time.time() - t0) * 1000, f"mappings_found={len(mappings)}, ai_generated={mapping_data.get('ai_generated')}")
         except Exception as e:
             record_test("8. Schema Mapping Analysis", False, (time.time() - t0) * 1000, str(e))
@@ -214,17 +216,16 @@ def run_all_tests():
                 "dataset_a_id": emp_id,
                 "dataset_b_id": pay_id,
                 "mappings": [
-                    {"source_column": "employee_id", "target_column": "staff_code"},
-                    {"source_column": "department", "target_column": "department_name"}
+                    {"source_column": "employee_id", "target_column": "employee_code"}
                 ],
                 "join_key_a": "employee_id",
-                "join_key_b": "staff_code",
+                "join_key_b": "employee_code",
                 "join_type": "inner"
             })
             assert res.status_code == 200, res.text
             mapped_prev = res.json()
             assert mapped_prev["total_rows"] > 0
-            assert "annual_salary" in mapped_prev["columns"]
+            assert "basic_salary" in mapped_prev["columns"]
             record_test("9. Schema Mapping Join Preview", True, (time.time() - t0) * 1000, f"merged_rows={mapped_prev['total_rows']}, cols={len(mapped_prev['columns'])}")
         except Exception as e:
             record_test("9. Schema Mapping Join Preview", False, (time.time() - t0) * 1000, str(e))
@@ -253,7 +254,7 @@ def run_all_tests():
             {
                 "step": 1,
                 "operation": "join",
-                "params": {"join_type": "inner", "left_key": "employee_id", "right_key": "staff_code"}
+                "params": {"join_type": "inner", "left_key": "employee_id", "right_key": "employee_code"}
             },
             {
                 "step": 2,
@@ -279,7 +280,7 @@ def run_all_tests():
                 "dataset_b_id": pay_id,
                 "operations": operations,
                 "join_key_a": "employee_id",
-                "join_key_b": "staff_code",
+                "join_key_b": "employee_code",
                 "join_type": "inner"
             })
             assert res.status_code == 200, res.text
@@ -302,7 +303,7 @@ def run_all_tests():
                 "dataset_b_id": pay_id,
                 "operations": operations,
                 "join_key_a": "employee_id",
-                "join_key_b": "staff_code",
+                "join_key_b": "employee_code",
                 "join_type": "inner"
             })
             assert res.status_code == 200, res.text
@@ -396,7 +397,7 @@ def run_all_tests():
             res = client.get("/api/samples")
             assert res.status_code == 200
             samples_list = res.json()
-            assert len(samples_list) == 3
+            assert len(samples_list) >= 15
             sample_res = client.get("/api/datasets/sample-employees/sample")
             assert sample_res.status_code == 200
             assert len(sample_res.text) > 0

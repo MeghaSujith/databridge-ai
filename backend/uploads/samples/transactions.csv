@@ -1,0 +1,15 @@
+transaction_id,customer_id,amount,transaction_type,transaction_date,payment_status
+TXN-5001,C101,1500.0,Payment,2024-08-10,Completed
+TXN-5002,C102,3200.5,Payment,2024-08-12,Completed
+TXN-5003,C103,850.0,Refund,2024-08-15,Settled
+TXN-5003,C103,850.0,Refund,2024-08-15,Settled
+TXN-5004,C104,4500.0,Payment,2024-08-18,Completed
+TXN-5005,C105,1200.0,Payment,2024-08-20,Pending
+TXN-5006,C101,2800.0,Payment,2024-08-22,Completed
+TXN-5007,C106,6200.0,Payment,2024-08-25,Failed
+TXN-5008,C107,950.0,Payment,2024-08-27,Completed
+TXN-5009,C108,3100.0,Payment,2024-08-29,Completed
+TXN-5010,C109,1750.0,Payment,2024-09-02,Completed
+TXN-5011,C199,4100.0,Payment,2024-09-05,Completed
+TXN-5012,C102,1850.0,Payment,2024-09-08,Completed
+TXN-5013,C110,2200.0,Payment,2024-09-11,Completed

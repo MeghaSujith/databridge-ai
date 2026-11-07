@@ -24,9 +24,20 @@ from dotenv import load_dotenv
 load_dotenv()
 load_dotenv(Path(__file__).parent / ".env")
 
-# ---------------------------------------------------------------------------
-# Config
-# ---------------------------------------------------------------------------
+try:
+    from sample_data_generator import (
+        generate_all_samples,
+        get_sample_catalog,
+        get_sample_by_id,
+        SCENARIOS_META
+    )
+except ImportError:
+    from backend.sample_data_generator import (
+        generate_all_samples,
+        get_sample_catalog,
+        get_sample_by_id,
+        SCENARIOS_META
+    )
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./databridge.db")
 UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "./uploads"))
 OUTPUT_DIR = Path(os.getenv("OUTPUT_DIR", "./outputs"))
@@ -143,70 +154,132 @@ def _call_ai(prompt: str) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Schema mapping (deterministic fallback)
 # ---------------------------------------------------------------------------
-GENERIC_STOPWORDS = {"col", "column", "val", "value", "field", "data", "info", "record", "item"}
+GENERIC_STOPWORDS = {"col", "column", "val", "value", "field", "data", "info", "record", "item", "date", "time", "status", "type"}
 
 def _similarity_score(a: str, b: str) -> float:
     a_clean, b_clean = a.lower().replace("_", " ").strip(), b.lower().replace("_", " ").strip()
     if a_clean == b_clean:
         return 1.0
 
-    # Common domain synonyms (e.g. employee_id <-> staff_code, dept <-> department_name)
-    synonyms = [
-        {"id", "code", "num", "number", "key", "identifier", "ref", "staff", "employee"},
-        {"name", "fullname", "full_name", "firstname", "lastname", "title"},
-        {"dept", "department", "division", "team", "group", "branch"},
-        {"salary", "pay", "wage", "compensation", "income", "earnings", "annual_salary"},
-        {"email", "mail", "emailaddress"},
-        {"phone", "mobile", "tel", "telephone"},
-        {"date", "dob", "birthdate", "created", "updated", "hire_date"},
-        {"address", "location", "city", "state", "country"},
-    ]
-    for grp in synonyms:
-        a_hit = any(w in a_clean.split() or w == a_clean for w in grp)
-        b_hit = any(w in b_clean.split() or w == b_clean for w in grp)
-        if a_hit and b_hit:
-            return 0.95 if any(w in a_clean and w in b_clean for w in grp) else 0.85
+    words_a = set(a_clean.split())
+    words_b = set(b_clean.split())
 
-    # Informative token overlap (excluding generic stopwords)
-    tokens_a = set(a_clean.split()) - GENERIC_STOPWORDS
-    tokens_b = set(b_clean.split()) - GENERIC_STOPWORDS
+    # 1. Entity Identifier Matching (Highest priority: same entity + identifier descriptor)
+    entity_groups = [
+        {"customer", "client", "account", "buyer", "patron", "consumer"},
+        {"employee", "staff", "worker"},
+        {"supplier", "vendor", "provider", "seller", "merchant"},
+        {"patient", "subject", "case"},
+        {"product", "item", "sku", "article", "material"},
+        {"department", "dept", "division", "team", "group", "branch"},
+        {"order", "po", "purchase"},
+        {"invoice", "bill"},
+        {"transaction", "payment", "charge"},
+    ]
+    id_descriptors = {"id", "code", "num", "number", "ref", "reference", "key", "identifier"}
+
+    for eg in entity_groups:
+        if (words_a & eg) and (words_b & eg):
+            if (words_a & id_descriptors) and (words_b & id_descriptors):
+                return 0.98
+            return 0.90
+
+    # 2. Distinct Semantic Concept Groups (Domain-Specific to avoid false cross-concept matches)
+    concept_synonyms = [
+        {"name", "fullname", "full_name", "firstname", "lastname", "title"},
+        {"salary", "pay", "wage", "compensation", "income", "earnings", "annual_salary", "basic_salary", "net_salary"},
+        {"email", "mail", "emailaddress", "contact_email"},
+        {"phone", "mobile", "tel", "telephone"},
+        # Distinct, non-interchangeable date concepts:
+        {"hire_date", "joining_date", "start_date", "employment_date"},
+        {"attendance_date", "work_date", "log_date", "swipe_date"},
+        {"order_date", "transaction_date", "purchase_date", "sale_date"},
+        {"issue_date", "invoice_date", "billing_date"},
+        {"due_date", "payment_due_date", "expiry_date"},
+        {"payment_date", "settlement_date", "disbursement_date", "payout_date"},
+        {"visit_date", "appointment_date", "consultation_date"},
+        {"registration_date", "signup_date", "enrollment_date"},
+        {"submission_date", "filing_date"},
+        # Distinct status concepts:
+        {"payment_status", "billing_status", "settlement_status"},
+        {"approval_status", "review_status"},
+        {"attendance_status"},
+        {"appointment_status"},
+        # General business attributes:
+        {"address", "location", "city", "state", "country"},
+        {"amount", "total", "price", "cost", "value", "fee", "order_value", "total_amount", "invoice_amount"},
+        {"budget", "annual_budget", "department_budget"},
+        {"quantity", "qty", "count", "units", "volume", "stock_quantity", "available_stock"},
+    ]
+    for grp in concept_synonyms:
+        norm_grp = {w.replace("_", " ") for w in grp}
+        a_hit = any(w in words_a or w == a_clean for w in norm_grp)
+        b_hit = any(w in words_b or w == b_clean for w in norm_grp)
+        if a_hit and b_hit:
+            return 0.95 if any(w in a_clean and w in b_clean for w in norm_grp) else 0.85
+
+    # Informative token overlap (excluding generic stopwords, type suffixes, and generic 'id'/'code')
+    informative_stopwords = GENERIC_STOPWORDS | id_descriptors
+    tokens_a = words_a - informative_stopwords
+    tokens_b = words_b - informative_stopwords
     if tokens_a and tokens_b and (tokens_a & tokens_b):
-        return 0.8
+        return 0.80
+
+    # Generic ID descriptor match as lower confidence fallback
+    if (words_a & id_descriptors) and (words_b & id_descriptors):
+        return 0.60
 
     # Meaningful substring match
-    if (len(a_clean) > 3 and a_clean in b_clean and a_clean not in GENERIC_STOPWORDS) or \
-       (len(b_clean) > 3 and b_clean in a_clean and b_clean not in GENERIC_STOPWORDS):
-        return 0.7
+    if (len(a_clean) > 3 and a_clean in b_clean and a_clean not in informative_stopwords) or \
+       (len(b_clean) > 3 and b_clean in a_clean and b_clean not in informative_stopwords):
+        return 0.70
 
     return 0.0
 
 
 def _deterministic_schema_mapping(cols_a: List[str], cols_b: List[str]) -> List[dict]:
-    mappings = []
-    used_b = set()
+    id_descriptors = {"id", "code", "num", "number", "ref", "reference", "key", "identifier"}
+    candidate_pairs = []
     for ca in cols_a:
-        best_score, best_cb = 0.0, None
         for cb in cols_b:
-            if cb in used_b:
-                continue
             s = _similarity_score(ca, cb)
-            if s > best_score:
-                best_score, best_cb = s, cb
-        if best_cb and best_score >= 0.6:
-            reason_map = {
-                1.0: "Exact match — identical column names.",
-                0.8: "High confidence — shared tokens in column names.",
-                0.7: "Likely match — one column name contains the other.",
-                0.6: "Semantic match — both columns belong to the same concept group (e.g. ID, name, salary).",
-            }
-            mappings.append({
-                "source_column": ca,
-                "target_column": best_cb,
-                "confidence": best_score,
-                "reason": reason_map.get(best_score, "Pattern-based similarity match."),
-                "ai_generated": False,
-            })
-            used_b.add(best_cb)
+            if s >= 0.6:
+                words_a = set(ca.lower().replace("_", " ").split())
+                words_b = set(cb.lower().replace("_", " ").split())
+                is_id = bool(s == 0.98 or ((words_a & id_descriptors) and (words_b & id_descriptors)))
+                candidate_pairs.append((s, is_id, ca, cb))
+
+    # Sort candidates by score descending, prioritizing identifier pairs on tie
+    candidate_pairs.sort(key=lambda x: (x[0], x[1]), reverse=True)
+
+    mappings = []
+    used_a = set()
+    used_b = set()
+
+    reason_map = {
+        1.0: "Exact match — identical column names.",
+        0.98: "High confidence identifier — matching business entity and ID key.",
+        0.95: "High confidence concept match — equivalent semantic field.",
+        0.85: "Concept match — synonymous business attribute.",
+        0.80: "Token match — shared domain tokens in column names.",
+        0.70: "Substring match — one column name contains the other.",
+        0.60: "Generic identifier descriptor match.",
+    }
+
+    for score, is_id, ca, cb in candidate_pairs:
+        if ca in used_a or cb in used_b:
+            continue
+        mappings.append({
+            "source_column": ca,
+            "target_column": cb,
+            "confidence": score,
+            "reason": reason_map.get(score, "Pattern-based similarity match."),
+            "is_identifier": is_id,
+            "ai_generated": False,
+        })
+        used_a.add(ca)
+        used_b.add(cb)
+
     return mappings
 
 
@@ -280,51 +353,10 @@ app.add_middleware(
 
 def _create_sample_data():
     samples_dir = UPLOAD_DIR / "samples"
-    samples_dir.mkdir(exist_ok=True)
-
-    employees_path = samples_dir / "employees.csv"
-    if not employees_path.exists():
-        employees_csv = """employee_id,employee_name,department,hire_date,email,phone
-E001,Alice Johnson,Engineering,2021-03-15,alice.johnson@company.com,555-1001
-E002,Bob Smith,Marketing,2020-07-22,bob.smith@company.com,555-1002
-E003,Carol White,Engineering,2022-01-10,carol.white@company.com,555-1003
-E004,David Brown,HR,2019-11-05,david.brown@company.com,555-1004
-E005,Eva Martinez,Finance,2021-08-30,eva.martinez@company.com,555-1005
-E002,Bob Smith,Marketing,2020-07-22,bob.smith@company.com,555-1002
-E006,Frank Lee,Engineering,2023-02-14,,555-1006
-E007,Grace Kim,Marketing,2022-09-01,grace.kim@company.com,
-E008,Henry Davis,Finance,2020-12-20,henry.davis@company.com,555-1008
-E009,Iris Chen,HR,2021-05-17,iris.chen@company.com,555-1009
-E010,Jack Wilson,Engineering,2023-06-01,jack.wilson@company.com,555-1010
-"""
-        employees_path.write_text(employees_csv)
-
-    payroll_path = samples_dir / "payroll.csv"
-    if not payroll_path.exists():
-        payroll_csv = """staff_code,full_name,department_name,annual_salary,bonus,tax_rate
-E001,Alice Johnson,Engineering,95000,5000,0.28
-E002,Bob Smith,Marketing,72000,3000,0.24
-E003,carol white,Engineering,88000,4500,0.26
-E004,David Brown,Human Resources,,2000,0.22
-E005,Eva Martinez,Finance,105000,6000,0.30
-E007,Grace Kim,MARKETING,68000,2500,0.22
-E008,Henry Davis,Finance,92000,4800,0.27
-E009,Iris Chen,Human Resources,78000,3500,0.24
-E011,Laura Adams,Engineering,91000,4700,0.27
-E012,Mike Turner,Finance,,3200,0.26
-"""
-        payroll_path.write_text(payroll_csv)
-
-    departments_path = samples_dir / "departments.csv"
-    if not departments_path.exists():
-        departments_csv = """dept_code,department_name,manager_name,budget,location
-D001,Engineering,Alice Johnson,500000,New York
-D002,Marketing,Bob Smith,250000,Chicago
-D003,HR,David Brown,150000,Austin
-D004,Finance,Eva Martinez,350000,San Francisco
-D005,Operations,Tom Hayes,200000,Boston
-"""
-        departments_path.write_text(departments_csv)
+    try:
+        generate_all_samples(samples_dir)
+    except Exception as e:
+        print(f"[Samples] Error initializing samples: {e}")
 
 
 # ===========================================================================
@@ -435,42 +467,60 @@ def preview_dataset(dataset_id: str, rows: int = 10):
 
 @app.get("/api/datasets/{dataset_id}/sample")
 def download_sample(dataset_id: str):
-    # handles pre-built sample files referenced by special IDs
-    samples = {
-        "sample-employees": UPLOAD_DIR / "samples" / "employees.csv",
-        "sample-payroll": UPLOAD_DIR / "samples" / "payroll.csv",
-        "sample-departments": UPLOAD_DIR / "samples" / "departments.csv",
-    }
-    path = samples.get(dataset_id)
-    if path and path.exists():
+    # handles pre-built sample files referenced by ID or filename
+    meta = get_sample_by_id(dataset_id)
+    filename = meta["filename"] if meta else f"{dataset_id}.csv"
+    path = UPLOAD_DIR / "samples" / filename
+    if not path.exists() and meta:
+        path = UPLOAD_DIR / "samples" / meta["filename"]
+    if path.exists():
         content = path.read_bytes()
+        ext = path.suffix.lower()
+        media_type = "text/csv"
+        if ext == ".xlsx":
+            media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        elif ext == ".json":
+            media_type = "application/json"
         return StreamingResponse(
             io.BytesIO(content),
-            media_type="text/csv",
+            media_type=media_type,
             headers={"Content-Disposition": f"attachment; filename={path.name}"},
         )
-    raise HTTPException(404, "Sample not found")
+    raise HTTPException(404, "Sample dataset not found")
 
 
 @app.post("/api/datasets/load-sample/{sample_id}")
 def load_sample_dataset(sample_id: str):
-    samples = {
-        "sample-employees": ("employees.csv", UPLOAD_DIR / "samples" / "employees.csv"),
-        "sample-payroll": ("payroll.csv", UPLOAD_DIR / "samples" / "payroll.csv"),
-        "sample-departments": ("departments.csv", UPLOAD_DIR / "samples" / "departments.csv"),
-    }
-    item = samples.get(sample_id)
-    if not item or not item[1].exists():
-        raise HTTPException(404, "Sample not found")
+    meta = get_sample_by_id(sample_id)
+    if not meta:
+        candidates = [s for s in SAMPLE_DATASETS_META if s["id"] == sample_id or s["filename"] == sample_id]
+        if candidates:
+            meta = candidates[0]
+            
+    if not meta:
+        raise HTTPException(404, f"Sample dataset '{sample_id}' not found")
 
-    orig_name, src_path = item
+    src_path = UPLOAD_DIR / "samples" / meta["filename"]
+    if not src_path.exists():
+        generate_all_samples(UPLOAD_DIR / "samples")
+
+    if not src_path.exists():
+        raise HTTPException(404, f"Sample file '{meta['filename']}' does not exist on disk")
+
+    orig_name = meta["filename"]
     content = src_path.read_bytes()
     dataset_id = str(uuid.uuid4())
-    safe_name = f"{dataset_id}.csv"
+    ext = src_path.suffix.lower()
+    safe_name = f"{dataset_id}{ext}"
     dest_path = UPLOAD_DIR / safe_name
     dest_path.write_bytes(content)
 
-    df = _read_dataset(str(dest_path))
+    try:
+        df = _read_dataset(str(dest_path))
+    except Exception as e:
+        dest_path.unlink(missing_ok=True)
+        raise HTTPException(422, f"Could not parse sample file: {e}")
+
     profile = _profile_df(df)
 
     db = SessionLocal()
@@ -508,11 +558,52 @@ def load_sample_dataset(sample_id: str):
 
 @app.get("/api/samples")
 def list_samples():
-    return [
-        {"id": "sample-employees", "name": "employees.csv", "description": "Employee records with some duplicates and missing emails"},
-        {"id": "sample-payroll", "name": "payroll.csv", "description": "Payroll data with missing salaries and name inconsistencies"},
-        {"id": "sample-departments", "name": "departments.csv", "description": "Department hierarchy with budgets and locations"},
-    ]
+    samples_dir = UPLOAD_DIR / "samples"
+    return get_sample_catalog(samples_dir)
+
+
+@app.get("/api/samples/{sample_id}/preview")
+def preview_sample(sample_id: str, rows: int = 10):
+    meta = get_sample_by_id(sample_id)
+    if not meta:
+        candidates = [s for s in SAMPLE_DATASETS_META if s["id"] == sample_id or s["filename"] == sample_id]
+        if candidates:
+            meta = candidates[0]
+    if not meta:
+        raise HTTPException(404, f"Sample dataset '{sample_id}' not found")
+
+    src_path = UPLOAD_DIR / "samples" / meta["filename"]
+    if not src_path.exists():
+        generate_all_samples(UPLOAD_DIR / "samples")
+
+    if not src_path.exists():
+        raise HTTPException(404, "Sample file not found")
+
+    try:
+        df = _read_dataset(str(src_path))
+        profile = _profile_df(df)
+        preview = df.head(rows).replace({np.nan: None}).to_dict(orient="records")
+        return {
+            "id": meta["id"],
+            "filename": meta["filename"],
+            "name": meta["name"],
+            "category": meta["category"],
+            "format": meta["format"],
+            "description": meta["description"],
+            "primary_key": meta.get("primary_key", ""),
+            "links_with": meta.get("links_with", []),
+            "columns": list(df.columns),
+            "column_info": profile["column_info"],
+            "total_rows": len(df),
+            "preview": preview,
+        }
+    except Exception as e:
+        raise HTTPException(422, f"Error generating sample preview: {e}")
+
+
+@app.get("/api/scenarios")
+def list_scenarios():
+    return SCENARIOS_META
 
 
 @app.delete("/api/datasets/{dataset_id}")
@@ -606,7 +697,13 @@ Return ONLY valid JSON (no markdown, no explanation outside JSON):
 
     if not mappings:
         mappings = _deterministic_schema_mapping(names_a, names_b)
-        join_rec = "Use the highest-confidence column pair as the join key."
+        # Select best identifier mapping for join recommendation
+        id_candidates = [m for m in mappings if m.get("is_identifier")]
+        if id_candidates:
+            best_id = max(id_candidates, key=lambda m: m["confidence"])
+            join_rec = f"Recommended join on identifier columns: '{best_id['source_column']}' = '{best_id['target_column']}'."
+        else:
+            join_rec = "No primary identifier join key found. Ensure semantic attributes like salary or dates are not used as primary join keys."
         notes = "Mappings generated using deterministic pattern matching (AI unavailable or returned invalid data)."
 
     return {

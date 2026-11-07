@@ -1,0 +1,13 @@
+patient_id,patient_name,age,department,visit_date
+PT-001,Eleanor Vance,42.0,Cardiology,2024-06-10
+PT-002,Marcus Brody,58.0,Oncology,2024-06-12
+PT-003,Sophia Patel,29.0,Neurology,2024-06-15
+PT-004,Julian Thorne,64.0,Orthopedics,2024-06-18
+PT-005,Clara Oswald,35.0,Pediatrics,2024-06-21
+PT-002,Marcus Brody,58.0,Oncology,2024-06-12
+PT-006,Arthur Dent,46.0,Gastroenterology,2024-06-25
+PT-007,Natasha Roman,33.0,Cardiology,2024-06-28
+PT-008,Bruce Banner,51.0,Endocrinology,2024-07-02
+PT-009,Diana Prince,,Neurology,2024-07-05
+PT-010,Clark Kent,38.0,Orthopedics,2024-07-08
+PT-011,Barry Allen,28.0,Cardiology,2024-07-12

@@ -1,12 +1,14 @@
-employee_id,employee_name,department,hire_date,email,phone
-E001,Alice Johnson,Engineering,2021-03-15,alice.johnson@company.com,555-1001
-E002,Bob Smith,Marketing,2020-07-22,bob.smith@company.com,555-1002
-E003,Carol White,Engineering,2022-01-10,carol.white@company.com,555-1003
-E004,David Brown,HR,2019-11-05,david.brown@company.com,555-1004
-E005,Eva Martinez,Finance,2021-08-30,eva.martinez@company.com,555-1005
-E002,Bob Smith,Marketing,2020-07-22,bob.smith@company.com,555-1002
-E006,Frank Lee,Engineering,2023-02-14,,555-1006
-E007,Grace Kim,Marketing,2022-09-01,grace.kim@company.com,
-E008,Henry Davis,Finance,2020-12-20,henry.davis@company.com,555-1008
-E009,Iris Chen,HR,2021-05-17,iris.chen@company.com,555-1009
-E010,Jack Wilson,Engineering,2023-06-01,jack.wilson@company.com,555-1010
+employee_id,employee_name,department,designation,joining_date,email,salary
+E001,Alice Johnson,Engineering,Senior Cloud Architect,2021-03-15,alice.johnson@company.com,115000
+E002,Bob Smith,Marketing,Growth Marketing Lead,2020-07-22,bob.smith@company.com,82000
+E003,Carol White,Engineering,Lead Backend Engineer,2022-01-10,carol.white@company.com,98000
+E004,David Brown,HR,Talent Acquisition Manager,2019-11-05,david.brown@company.com,75000
+E005,Eva Martinez,Finance,Senior Financial Analyst,2021-08-30,eva.martinez@company.com,105000
+E002,Bob Smith,Marketing,Growth Marketing Lead,2020-07-22,bob.smith@company.com,82000
+E006,Frank Lee,Engineering,DevOps Engineer,2023-02-14,,88000
+E007,Grace Kim,MARKETING,Campaign Specialist,2022-09-01,grace.kim@company.com,71000
+E008,Henry Davis,Finance,Accounting Manager,2020-12-20,henry.davis@company.com,94000
+E009,Iris Chen,HR,HR Operations Specialist,2021-05-17,iris.chen@company.com,68000
+E010,Jack Wilson,Engineering,QA Automation Lead,2023-06-01,jack.wilson@company.com,86000
+E011,Karen Taylor,Sales,Enterprise Account Exec,2022-04-18,karen.taylor@company.com,95000
+E012,Leo Garcia,Operations,Logistics Coordinator,2023-08-11,leo.garcia@company.com,64000

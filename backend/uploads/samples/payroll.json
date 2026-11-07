@@ -1,0 +1,90 @@
+[
+  {
+    "employee_code": "E001",
+    "basic_salary": 95000,
+    "deductions": 7500,
+    "bonuses": 8000,
+    "net_salary": 95500,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E002",
+    "basic_salary": 72000,
+    "deductions": 5500,
+    "bonuses": 4000,
+    "net_salary": 70500,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E003",
+    "basic_salary": 88000,
+    "deductions": 6800,
+    "bonuses": 6000,
+    "net_salary": 87200,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E005",
+    "basic_salary": 105000,
+    "deductions": 8500,
+    "bonuses": 9000,
+    "net_salary": 105500,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E007",
+    "basic_salary": 68000,
+    "deductions": 5000,
+    "bonuses": 3500,
+    "net_salary": 66500,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E008",
+    "basic_salary": 92000,
+    "deductions": 7200,
+    "bonuses": 7000,
+    "net_salary": 91800,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E009",
+    "basic_salary": 65000,
+    "deductions": 4800,
+    "bonuses": null,
+    "net_salary": 60200,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E011",
+    "basic_salary": 85000,
+    "deductions": 6500,
+    "bonuses": 7500,
+    "net_salary": 86000,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E012",
+    "basic_salary": 58000,
+    "deductions": 4200,
+    "bonuses": 2500,
+    "net_salary": 56300,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E088",
+    "basic_salary": 77000,
+    "deductions": 5800,
+    "bonuses": 4500,
+    "net_salary": 75700,
+    "payment_date": "2024-09-30"
+  },
+  {
+    "employee_code": "E001",
+    "basic_salary": 95000,
+    "deductions": 7500,
+    "bonuses": 8000,
+    "net_salary": 95500,
+    "payment_date": "2024-08-31"
+  }
+]
